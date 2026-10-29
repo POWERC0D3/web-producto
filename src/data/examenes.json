@@ -1,0 +1,14 @@
+[
+  { "fecha": "2026-11-04", "asignatura": "IP",    "tipo": "entrega", "detalle": "Entregar el Speaking en Teams" },
+  { "fecha": "2026-11-11", "asignatura": "IP",    "tipo": "examen",  "detalle": "Leer & Escribir" },
+  { "fecha": "2026-11-13", "asignatura": "SASP",  "tipo": "examen" },
+  { "fecha": "2026-11-13", "asignatura": "PROG",  "tipo": "examen" },
+  { "fecha": "2026-11-16", "asignatura": "IP",    "tipo": "examen",  "detalle": "Escuchar & Vocabulario" },
+  { "fecha": "2026-11-18", "asignatura": "LMSGI", "tipo": "examen" },
+  { "fecha": "2026-11-19", "asignatura": "ENDES", "tipo": "examen" },
+  { "fecha": "2026-11-19", "asignatura": "DASP",  "tipo": "examen" },
+  { "fecha": "2026-11-20", "asignatura": "SISIN", "tipo": "examen" },
+  { "fecha": "2026-11-23", "asignatura": "BADAT", "tipo": "examen" },
+  { "fecha": "2026-11-24", "asignatura": "IPEI",  "tipo": "examen" },
+  { "fecha": "2026-11-26", "asignatura": null,    "tipo": "evaluacion", "detalle": "Sesión de evaluación" }
+]

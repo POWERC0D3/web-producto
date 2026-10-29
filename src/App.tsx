@@ -1,121 +1,97 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useMemo, useState } from 'react'
+import { MotionConfig, motion, useReducedMotion } from 'motion/react'
+import { useAhora } from './hooks/useAhora'
+import { useAviso } from './hooks/useAviso'
+import { useModulos } from './hooks/useModulos'
+import { irA, useRuta, type Ruta } from './hooks/useRuta'
+import { eventosConDias } from './lib/eventos'
+import { cascada } from './lib/movimiento'
+import { Aviso } from './components/ui/Aviso'
+import { CortinaPixel, type FaseCortina } from './components/ui/CortinaPixel'
+import { FondoPuntos } from './components/ui/FondoPuntos'
+import { Cabecera } from './components/sections/Cabecera'
+import { HorarioSemanal } from './components/sections/HorarioSemanal'
+import { Ahora } from './components/sections/Ahora'
+import { Calendario } from './components/sections/Calendario'
+import { Agenda } from './components/sections/Agenda'
+import { Ajustes } from './components/sections/Ajustes'
+
+type Origen = { x: number; y: number }
 
 function App() {
-  const [count, setCount] = useState(0)
+  const ahora = useAhora()
+  const ruta = useRuta()
+  const { excluidos, alternar, restablecer } = useModulos()
+  const { aviso, avisar } = useAviso()
+  const reducido = useReducedMotion()
+  const [cortina, setCortina] = useState<(FaseCortina & { destino: Ruta }) | null>(null)
+
+  // Un único sitio donde se aplican los módulos apagados: lo que no cursas no llega a ningún panel
+  const lista = useMemo(
+    () => eventosConDias(ahora).filter((e) => !e.asignatura || !excluidos.has(e.asignatura)),
+    [ahora, excluidos],
+  )
+
+  // Cambio de página con la cortina de píxeles (sin animación si se pide movimiento reducido)
+  const navegar = (destino: Ruta, origen: Origen) => {
+    if (reducido) irA(destino)
+    else setCortina({ fase: 'cubrir', ...origen, destino })
+  }
+  const alCubrir = () => {
+    if (!cortina) return
+    irA(cortina.destino)
+    setCortina({ fase: 'descubrir', x: innerWidth / 2, y: innerHeight / 2, destino: cortina.destino })
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    // reducedMotion="user": Motion respeta prefers-reduced-motion en todas las animaciones
+    <MotionConfig reducedMotion="user">
+      <FondoPuntos />
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      {ruta === 'ajustes' ? (
+        <Ajustes
+          excluidas={excluidos}
+          onAlternar={alternar}
+          onRestablecer={restablecer}
+          onVolver={(o) => navegar('panel', o)}
+          avisar={avisar}
+        />
+      ) : (
+        // En escritorio (lg) el panel ocupa exactamente la pantalla; en móvil las celdas se apilan
+        <div className="flex min-h-svh flex-col lg:h-svh lg:overflow-hidden">
+          <Cabecera
+            ahora={ahora}
+            lista={lista}
+            onCuenta={(a) => avisar(a === 'crear' ? 'La creación de cuentas llegará pronto' : 'El inicio de sesión llegará pronto')}
+          />
+          <motion.main
+            variants={cascada}
+            initial="oculto"
+            animate="visible"
+            className="grid flex-1 grid-cols-1 gap-px p-px md:grid-cols-2 lg:min-h-0 lg:grid-cols-12 lg:grid-rows-[minmax(0,1.1fr)_minmax(0,1fr)]"
+          >
+            <Ahora
+              ahora={ahora}
+              excluidas={excluidos}
+              onAbrirAjustes={(o) => navegar('ajustes', o)}
+              className="order-first md:col-span-2 lg:order-none lg:col-span-4 lg:col-start-9 lg:row-start-1"
+            />
+            <HorarioSemanal
+              ahora={ahora}
+              excluidas={excluidos}
+              onAlternar={alternar}
+              onRestablecer={restablecer}
+              className="md:col-span-2 lg:col-span-8 lg:col-start-1 lg:row-start-1"
+            />
+            <Calendario ahora={ahora} lista={lista} className="md:col-span-2 lg:col-span-8" />
+            <Agenda ahora={ahora} lista={lista} excluidas={excluidos} className="md:col-span-2 lg:col-span-4" />
+          </motion.main>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      )}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <CortinaPixel estado={cortina} onCubierta={alCubrir} onFin={() => setCortina(null)} />
+      <Aviso aviso={aviso} />
+    </MotionConfig>
   )
 }
 

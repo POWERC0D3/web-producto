@@ -1,0 +1,12 @@
+[
+  { "id": "PROG",  "nombre": "Programación" },
+  { "id": "BADAT", "nombre": "Bases de Datos" },
+  { "id": "ENDES", "nombre": "Entornos de Desarrollo" },
+  { "id": "PIDW",  "nombre": "Proyecto" },
+  { "id": "LMSGI", "nombre": "Lenguajes de Marcas y Sistemas de Gestión de Información" },
+  { "id": "SISIN", "nombre": "Sistemas Informáticos" },
+  { "id": "IP",    "nombre": "Inglés Profesional" },
+  { "id": "IPEI",  "nombre": "Itinerario Personal para la Empleabilidad I" },
+  { "id": "DASP",  "nombre": "Digitalización Aplicada a los Sectores Productivos" },
+  { "id": "SASP",  "nombre": "Sostenibilidad Aplicada al Sistema Productivo" }
+]

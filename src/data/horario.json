@@ -1,0 +1,29 @@
+{
+  "recreo": { "inicio": "11:00", "fin": "11:30" },
+  "clases": [
+    { "dia": 1, "asignatura": "PIDW",  "inicio": "08:15", "fin": "09:10" },
+    { "dia": 1, "asignatura": "BADAT", "inicio": "09:10", "fin": "11:00" },
+    { "dia": 1, "asignatura": "IPEI",  "inicio": "11:30", "fin": "12:25" },
+    { "dia": 1, "asignatura": "IP",    "inicio": "12:25", "fin": "13:20" },
+    { "dia": 1, "asignatura": "LMSGI", "inicio": "13:20", "fin": "14:15" },
+
+    { "dia": 2, "asignatura": "BADAT", "inicio": "08:15", "fin": "10:05" },
+    { "dia": 2, "asignatura": "IPEI",  "inicio": "10:05", "fin": "11:00" },
+    { "dia": 2, "asignatura": "IPEI",  "inicio": "11:30", "fin": "12:25" },
+    { "dia": 2, "asignatura": "PROG",  "inicio": "12:25", "fin": "14:15" },
+
+    { "dia": 3, "asignatura": "BADAT", "inicio": "08:15", "fin": "09:10" },
+    { "dia": 3, "asignatura": "IP",    "inicio": "09:10", "fin": "10:05" },
+    { "dia": 3, "asignatura": "SISIN", "inicio": "10:05", "fin": "11:00" },
+    { "dia": 3, "asignatura": "SISIN", "inicio": "11:30", "fin": "12:25" },
+    { "dia": 3, "asignatura": "LMSGI", "inicio": "12:25", "fin": "14:15" },
+
+    { "dia": 4, "asignatura": "PROG",  "inicio": "08:15", "fin": "10:05" },
+    { "dia": 4, "asignatura": "DASP",  "inicio": "10:05", "fin": "11:00" },
+    { "dia": 4, "asignatura": "ENDES", "inicio": "11:30", "fin": "14:15" },
+
+    { "dia": 5, "asignatura": "PROG",  "inicio": "08:15", "fin": "11:00" },
+    { "dia": 5, "asignatura": "SASP",  "inicio": "11:30", "fin": "12:25" },
+    { "dia": 5, "asignatura": "SISIN", "inicio": "12:25", "fin": "14:15" }
+  ]
+}
