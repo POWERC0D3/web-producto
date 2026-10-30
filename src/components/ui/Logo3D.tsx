@@ -245,6 +245,7 @@ type Estado = {
   mx: number
   my: number
   dentro: boolean
+  incl: { x: number; y: number } | null // inclinación del móvil (giroscopio), -1..1 en cada eje; null sin giroscopio
   anillos: { x: number; y: number; t: number }[]
   particulas: Particula[]
   t: number
@@ -295,6 +296,7 @@ function crearEstado(geo: Geo): Estado {
     mx: 0,
     my: 0,
     dentro: false,
+    incl: null,
     anillos: [],
     particulas: [],
     t: 0,
@@ -537,9 +539,10 @@ function pintar(cv: HTMLCanvasElement, s: Estado) {
 function avanzar(s: Estado, dt: number) {
   const { geo } = s
   s.t += dt
-  // Giro: un vaivén lento + inclinación hacia el ratón (suavizada para que no dé tirones)
-  const tx = s.dentro ? (s.mx / geo.W - 0.5) * 2 * geo.inclina : 0
-  const ty = s.dentro ? (s.my / geo.H - 0.5) * 2 * geo.inclina : 0
+  // Giro: un vaivén lento + inclinación hacia el ratón (suavizada para que no dé tirones).
+  // En el móvil no hay ratón: inclinar el teléfono hace lo mismo (giroscopio)
+  const tx = s.dentro ? (s.mx / geo.W - 0.5) * 2 * geo.inclina : (s.incl?.x ?? 0) * geo.inclina
+  const ty = s.dentro ? (s.my / geo.H - 0.5) * 2 * geo.inclina : (s.incl?.y ?? 0) * geo.inclina
   const yawObjetivo = geo.giroY + 0.16 * geo.vaiven * Math.sin(s.t * 0.5) + tx * 0.5
   const pitchObjetivo = geo.giroX + 0.05 * geo.vaiven * Math.sin(s.t * 0.37) - ty * 0.25
   const suave = 1 - Math.pow(0.02, dt)
@@ -716,11 +719,41 @@ export function Logo3D({ className = '', zonas, onZona }: Props) {
     })
     io.observe(c)
 
+    // ── Giroscopio (solo táctil): inclinar el móvil gira el logo como el ratón en el ordenador ──
+    // gamma = inclinar a izquierda/derecha; beta = hacia delante/atrás (en grados).
+    // Lo "recto" en vertical es como sostienes el móvil: la referencia se va acercando poco a poco a tu postura
+    let referencia: number | null = null
+    const alInclinar = (e: DeviceOrientationEvent) => {
+      if (e.gamma === null || e.beta === null) return
+      // Con el móvil en horizontal los ejes se intercambian
+      const angulo = screen.orientation?.angle ?? 0
+      const [lado, frente] = angulo === 90 ? [e.beta, -e.gamma] : angulo === 270 ? [-e.beta, e.gamma] : [e.gamma, e.beta]
+      referencia = referencia === null ? frente : referencia + (frente - referencia) * 0.02
+      const limitar = (v: number) => Math.max(-1, Math.min(1, v))
+      s.incl = { x: limitar(lado / 25), y: limitar((frente - referencia) / 25) } // 25° de inclinación = giro máximo
+    }
+    // iPhone: Safari solo deja leer el giroscopio tras pedir permiso, y solo dentro de un gesto (el primer toque)
+    type ConPermiso = typeof DeviceOrientationEvent & { requestPermission?: () => Promise<'granted' | 'denied'> }
+    const pedir = () => {
+      ;(DeviceOrientationEvent as ConPermiso)
+        .requestPermission?.()
+        .then((r) => r === 'granted' && window.addEventListener('deviceorientation', alInclinar))
+        .catch(() => {}) // sin permiso: el logo sigue con su vaivén
+    }
+    const usaGiroscopio = tactil && !reducido && typeof DeviceOrientationEvent !== 'undefined'
+    if (usaGiroscopio) {
+      if (typeof (DeviceOrientationEvent as ConPermiso).requestPermission === 'function')
+        window.addEventListener('touchend', pedir, { once: true })
+      else window.addEventListener('deviceorientation', alInclinar)
+    }
+
     return () => {
       vivo = false
       clearTimeout(espera)
       ro.disconnect()
       io.disconnect()
+      window.removeEventListener('deviceorientation', alInclinar)
+      window.removeEventListener('touchend', pedir)
       cancelAnimationFrame(s.raf)
       s.raf = 0
     }

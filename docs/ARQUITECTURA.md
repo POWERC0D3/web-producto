@@ -21,6 +21,7 @@ Cómo está organizado el código de Monte Naranco Agenda Digital y cómo funcio
 13. [Rendimiento](#13-rendimiento)
 14. [Accesibilidad](#14-accesibilidad)
 15. [Convenciones](#15-convenciones)
+16. [Despliegue](#16-despliegue)
 
 ---
 
@@ -30,7 +31,8 @@ Es una **SPA (Single Page Application)** solo de frontend: Vite sirve un `index.
 
 - los **datos** (horario, exámenes, calendario escolar) son archivos JSON importados en el build;
 - las **preferencias** (grupo, módulos apagados, tareas hechas, sonido) se guardan en `localStorage`;
-- la **navegación** usa el `#` de la URL (`#/ajustes`, `#/entrar`…), sin librería de rutas.
+- la **navegación** usa el `#` de la URL (`#/ajustes`, `#/entrar`…), sin librería de rutas;
+- el resultado del build (`dist/`) son **archivos estáticos**, servidos desde S3 + CloudFront en [agenda.alvaro.cloud](https://agenda.alvaro.cloud) (ver [§16](#16-despliegue)).
 
 ```
             ┌──────────────── App.tsx ────────────────┐
@@ -104,7 +106,13 @@ Guardar solo lo mínimo y **derivar el resto** evita que dos estados se contradi
 
 - Usa **`useSyncExternalStore`**, la forma oficial de leer en React un dato que vive fuera de React (la URL) y volver a pintar cuando cambia (`hashchange`).
 - El botón Atrás del navegador y los enlaces directos funcionan sin instalar React Router.
-- **Transición:** `navegar(destino, origen)` lanza la `CortinaPixel` desde el punto pulsado. Cuando la pantalla está cubierta (`onCubierta`) se cambia el hash y la cortina se retira desde el centro. Con movimiento reducido se cambia directamente.
+- **Transición:** `navegar(destino, origen, mensaje?)` lanza la `CortinaPixel` desde el punto pulsado. Cuando la pantalla está cubierta (`onCubierta`) se cambia el hash, se muestra el `mensaje` si lo hay y la cortina se retira desde el centro. El aviso se lanza **al llegar** y no al salir, porque si no la cortina lo taparía. Con movimiento reducido se cambia directamente.
+- **Scroll:** cada **página** empieza arriba del todo (un `useEffect` en `App`). `#/entrar` y `#/crear` cuentan como la misma página, así que cambiar de pestaña al final de la landing no sube el scroll.
+- **Login y registro:** el formulario de la landing exige rellenar los campos (`required`, `type="email"`). Al enviarse:
+  - *Iniciar sesión* llama a `navegar('panel', …)`;
+  - *Crear cuenta* llama a `navegar('ajustes', …)`.
+
+  La función baja por *props*: `App` → `Landing` (`onNavegar`) → `Hero` → `TarjetaCuenta` (`onAcceder`). Aún no hay cuentas: los datos no se comprueban ni se guardan.
 - **Carga diferida:** `Ajustes` y `Landing` se importan con `React.lazy` + `Suspense`, y se precargan con `requestIdleCallback` en cuanto el navegador está libre.
 
 ---
@@ -153,7 +161,7 @@ Todas las lecturas y escrituras van en `try/catch`: en una ventana privada o con
 | `cristal.ts` | La lupa WebGL (ver [§9.4](#94-lupa-de-cristal-cristalts--lupacristaltsx)) | `crearCristal` |
 | `movimiento.ts` | Curvas y variantes de Motion compartidas | `EASE_SALIDA`, `cascada`, `aparecer` |
 | `gsap.ts` | Registra los plugins de GSAP una sola vez | `gsap`, `ScrollTrigger`, `useGSAP` |
-| `config.ts` | Constantes de configuración (≈ `application.properties`) | `URL_CENTRO` |
+| `config.ts` | Constantes de configuración (≈ `application.properties`) | `URL_CENTRO` (web del instituto), `URL_ORIGEN` (alvaro.cloud) |
 
 ### Cómo se generan las tareas (`tareasDelDia`)
 
@@ -195,11 +203,11 @@ Cada tarea tiene un **id estable** (`entrega-<id>`, `dudas-PROG`…). Por eso se
 
 | Componente | Qué es |
 |---|---|
-| `Cabecera` | Barra superior en rejilla `1fr auto 1fr`, para que el título quede centrado de verdad. Tiene su propio reloj de 1 s: solo ella se re-renderiza cada segundo. Las cifras usan `Odometro`. |
-| `HorarioSemanal` | Rejilla de la semana: días en columnas, franjas en filas, recreo. Cada bloque (`BloqueClase`) tiene estados: normal, ahora, pasada, convalidada (hueco rayado), temporalmente apagada (borde discontinuo), atenuada (fuera de la lupa). Gestiona la rueda (con *throttle*), las flechas y el hover de asignatura. Monta `LupaCristal`. En móvil tiene una vista de lista. |
-| `Calendario` | Modos *Exámenes* y *Escolar* con `AnimatePresence`. Mes navegable (limitado a meses con información ±1), lista agrupada por semanas y filtros con subrayado animado (`layoutId`). |
+| `Cabecera` | Barra superior en rejilla `1fr auto 1fr`, para que el título quede centrado de verdad. Tiene su propio reloj de 1 s: solo ella se re-renderiza cada segundo. Las cifras usan `Odometro`. Las dos cuentas atrás se definen una vez y se colocan en dos sitios: a los lados del título (desde `md`) o en una segunda fila (móvil). |
+| `HorarioSemanal` | Rejilla de la semana: días en columnas, franjas en filas, recreo. Cada bloque (`BloqueClase`) tiene estados: normal, ahora, pasada, convalidada (hueco rayado), temporalmente apagada (borde discontinuo), atenuada (fuera de la lupa). Los días sin clase quedan en penumbra salvo bajo la lupa. Gestiona la rueda (con *throttle*), las flechas y el hover de asignatura. Monta `LupaCristal`, cuyo margen se recorta con `overflow-x: clip` entre `md` y `lg`. **En móvil:** pestañas por día y una lista de **periodos**: cada clase mide sus periodos × 3,5 rem, con una línea discontinua en cada cambio de hora, y los periodos sin clase en mitad del día aparecen como "Libre". |
+| `Calendario` | Modos *Exámenes* y *Escolar* con `AnimatePresence`. Mes navegable (limitado a meses con información ±1), lista agrupada por semanas y filtros con subrayado animado (`layoutId`). Pulsar un día del mes hace `scrollIntoView` hasta su prueba. Por debajo de `lg` la lista tiene `max-h` y scroll propio (`overscroll-contain`). |
 | `Agenda` | El plan del día: cabecera ("Jueves 12 · Hoy · 0/7"), estado de "pensando", tareas con `Escritura` y casillas. En escritorio, el "taco" isométrico. |
-| `PanelLogo` | El `Logo3D` con sus zonas (tejado, puertas). |
+| `PanelLogo` | El `Logo3D` con sus zonas: tejado → *Origen* (alvaro.cloud, otra pestaña), puerta central → *Login*, derecha → *Ajustes*, izquierda → web del instituto (otra pestaña). |
 | `Ajustes` | Página de ajustes: grupo, módulos, sonido, sincronización. |
 | `ElegirGrupo` | Los tres `Carrusel` (ciclo, curso, grupo). |
 
@@ -207,9 +215,9 @@ Cada tarea tiene un **id estable** (`entrega-<id>`, `dudas-PROG`…). Por eso se
 
 | Componente | Qué es |
 |---|---|
-| `Landing` | Barra fija + `Hero`. El botón "Entrar" salta al final del ScrollTrigger. |
+| `Landing` | Barra fija + `Hero`. El botón "Entrar" salta al final del ScrollTrigger. Recibe `onNavegar` (la `navegar` de `App`) para "Volver al panel" y para el formulario. |
 | `Hero` | La escena fijada con GSAP (ver [§10](#10-animación)). |
-| `Acceso` | `TarjetaCuenta`: pestañas de crear cuenta / iniciar sesión y el formulario de muestra. |
+| `Acceso` | `TarjetaCuenta`: pestañas de crear cuenta / iniciar sesión y el formulario. Usa la validación nativa (`required`, `type="email"`, `user-invalid:` en coral); un único `onInvalidCapture` en el `<form>` hace sonar el aviso, porque `invalid` no burbujea. Al enviarse llama a `onAcceder(destino, centro, mensaje)`. |
 
 ### `components/ui/`: piezas reutilizables
 
@@ -250,6 +258,11 @@ cada fotograma:
 - **Estela del ratón:** un búfer de "calor" por celda. Por encima del umbral `FRIO`, el punto se pinta como carácter de la rampa ` . : - = + * # % @`.
 - **Zonas pulsables:** los polígonos (en px de la imagen) se proyectan con la misma rotación y se aplican como `clip-path: polygon(…)` a `<button>` reales.
 - **Pausa:** un `IntersectionObserver` detiene el bucle cuando el logo no se ve. Con movimiento reducido se pinta un único fotograma.
+- **Giroscopio (pantallas táctiles):**
+  - **Sustituye al ratón:** `deviceorientation` da `gamma` (inclinar a los lados) y `beta` (hacia delante o atrás), que se guardan como `s.incl` en −1..1, con 25° como giro máximo. `avanzar()` los usa igual que la posición del ratón.
+  - **Calibración:** la referencia vertical se acerca poco a poco a la postura del usuario (`referencia += (beta − referencia) · 0,02`), así que no hace falta sostener el móvil plano.
+  - **Horizontal:** con el móvil apaisado se intercambian los ejes según `screen.orientation.angle`.
+  - **Permiso:** Safari en iOS y las versiones recientes de Chrome exigen `DeviceOrientationEvent.requestPermission()` dentro de un gesto del usuario. Se pide en el primer `touchend`. Si se deniega, el logo sigue con su vaivén.
 - **Tamaño:** el tamaño lógico del lienzo es el de su caja en px, así la densidad de puntos es la misma en cualquier pantalla.
 
 ### 9.2 `FondoPuntos`: dithering ordenado
@@ -413,3 +426,40 @@ Cada variable de `@theme` se convierte en clases (`bg-arena`, `text-tinta`, `fon
 - **Comentarios:** explican el **porqué** y la técnica, no lo obvio. Muchos incluyen la equivalencia en Java.
 - **Componentes** con *named exports* y props tipadas con `type Props`.
 - **Comprobación:** `npm run build` (incluye `tsc -b`) y `npm run lint` deben pasar sin errores ni avisos.
+
+---
+
+## 16. Despliegue
+
+```
+Usuario ──► Cloudflare (DNS) ──► CloudFront (HTTPS, caché, Brotli) ──► S3 (bucket privado)
+```
+
+| Recurso | Configuración |
+|---|---|
+| **S3** `agenda-alvaro-cloud` (`eu-north-1`) | Bloqueo de acceso público activado. La política del bucket solo permite `s3:GetObject` a la distribución de CloudFront (condición `AWS:SourceArn`). |
+| **CloudFront** | Origen S3 con *Origin Access Control* (firma SigV4). `http` → `https`, compresión, política de caché gestionada `CachingOptimized` (respeta el `Cache-Control` de cada archivo), objeto raíz `index.html`, HTTP/2 y HTTP/3, `PriceClass_100` (Europa y Norteamérica). |
+| **ACM** (`us-east-1`) | Certificado de `agenda.alvaro.cloud`, validado por DNS. El registro de validación debe quedarse en Cloudflare: ACM lo usa para renovarlo cada año. |
+| **Cloudflare** | `CNAME agenda → <distribución>.cloudfront.net` en modo **DNS only** (nube gris): con el proxy activado habría dos CDN encadenadas. |
+
+Al usar rutas con `#`, el servidor siempre recibe `/`, así que **no hace falta reescribir rutas** para la SPA, como sí pasaría con un router basado en el *path*.
+
+### `npm run deploy` ([scripts/desplegar.mjs](../scripts/desplegar.mjs))
+
+1. `npm run build`.
+2. Sube todo **excepto** `index.html`, por tipos de archivo. El `Content-Type` va explícito, porque en Windows la CLI lo adivina leyendo el registro y a veces falla:
+
+   | Archivos | `Cache-Control` | Por qué |
+   |---|---|---|
+   | `assets/*` | `public, max-age=31536000, immutable` | Llevan un hash del contenido en el nombre: si cambian, cambia el nombre |
+   | Resto (sonidos, iconos) | `public, max-age=86400` | Mantienen su nombre entre versiones |
+   | `index.html` | `no-cache` | Es el que apunta a los assets nuevos |
+
+3. Sube `index.html` **al final**, para que nunca apunte a archivos que aún no existen.
+4. Invalida `/index.html` y `/` en CloudFront. Las 1.000 primeras rutas al mes son gratis.
+
+Los assets antiguos **no se borran**: una pestaña abierta con la versión anterior puede pedir todavía uno de sus trozos diferidos.
+
+**Credenciales:** la CLI de AWS las lee de `~/.aws/credentials`, configuradas con `aws configure` y un usuario de IAM propio para desplegar. Nunca van al repositorio. En el script solo aparecen el nombre del bucket y el id de la distribución, que no son secretos.
+
+**Coste:** se paga por uso. Para el tráfico de esta web, el nivel gratuito de CloudFront (1 TB y 10 millones de peticiones al mes) cubre de sobra lo que se sirve, y S3 solo guarda unos 2 MB.

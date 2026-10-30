@@ -63,7 +63,14 @@ function App() {
     return () => clearTimeout(id)
   }, [])
 
-  const [cortina, setCortina] = useState<(FaseCortina & { destino: Ruta }) | null>(null)
+  // Cada página empieza arriba del todo (p. ej. al enviar el formulario, que está al final de la landing).
+  // #/entrar y #/crear son la MISMA página (solo cambia la pestaña): cambiar de pestaña no debe subir el scroll
+  const pagina = ruta === 'crear' ? 'entrar' : ruta
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pagina])
+
+  const [cortina, setCortina] = useState<(FaseCortina & { destino: Ruta; mensaje?: string }) | null>(null)
 
   // Un único sitio donde se aplican los módulos apagados: lo que no cursas no llega a ningún panel
   const lista = useMemo(() => (datos ? eventosVisibles(datos.eventos, ahora, excluidos) : []), [datos, ahora, excluidos])
@@ -88,19 +95,22 @@ function App() {
   }
 
   // Cambio de página con la cortina de píxeles (sin animación si se pide movimiento reducido)
-  const navegar = (destino: Ruta, origen: Origen) => {
+  // `mensaje` (opcional) se muestra al LLEGAR a la página nueva, no al salir: si no, la cortina lo taparía
+  const navegar = (destino: Ruta, origen: Origen, mensaje?: string) => {
     if (reducido) {
       sonar('transition_up')
       irA(destino)
+      if (mensaje) avisar(mensaje)
     } else {
       viento({ sube: true, x: origen.x }) // ráfaga mientras los píxeles "se tragan" la pantalla
-      setCortina({ fase: 'cubrir', ...origen, destino })
+      setCortina({ fase: 'cubrir', ...origen, destino, mensaje })
     }
   }
   const alCubrir = () => {
     if (!cortina) return
     irA(cortina.destino)
     sonar('transition_down', { volumen: 0.7 }) // la página nueva "aterriza"
+    if (cortina.mensaje) avisar(cortina.mensaje)
     setCortina({ fase: 'descubrir', x: innerWidth / 2, y: innerHeight / 2, destino: cortina.destino })
   }
 
@@ -123,7 +133,7 @@ function App() {
             avisar={avisar}
           />
         ) : ruta === 'entrar' || ruta === 'crear' ? (
-          <Landing modo={ruta} onVolver={(o) => navegar('panel', o)} avisar={avisar} />
+          <Landing modo={ruta} onNavegar={navegar} />
         ) : (
           // En escritorio (lg) el panel ocupa exactamente la pantalla; en móvil las celdas se apilan
           <div className="flex min-h-svh flex-col lg:h-svh lg:overflow-hidden">

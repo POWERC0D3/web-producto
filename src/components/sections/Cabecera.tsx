@@ -106,50 +106,62 @@ export function Cabecera({ horario, lista, excluidas, grupo }: Props) {
     .map((e) => ({ e, inicio: inicioDePrueba(e, horario) }))
     .find((p) => p.inicio > reloj)
 
-  return (
-    <header className="grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-4 cristal relative z-30 border-b border-linea bg-fondo/60 px-4 text-xs text-tinta-suave">
-      <dl className="flex min-w-0">
-        {prueba && (
-          <Cuenta
-            etiqueta={prueba.e.tipo === 'entrega' ? 'Próxima entrega' : 'Próxima prueba'}
-            horaPrimero
-            asignatura={prueba.e.asignatura}
-            nombre={prueba.e.asignatura ? nombreAsignatura(prueba.e.asignatura) : (prueba.e.detalle ?? 'Evaluación')}
-            hasta={prueba.inicio}
-            reloj={reloj}
-            titulo={`${formatoLargo(prueba.inicio)}${prueba.e.detalle ? ` · ${prueba.e.detalle}` : ''}`}
-            className="hidden md:flex"
-          />
-        )}
-      </dl>
+  // Las dos cuentas atrás se definen una vez y se colocan en dos sitios: a los lados del título (escritorio)
+  // o en una segunda fila, una debajo de otra (móvil, donde no caben junto al título)
+  const cuentaPrueba = (className: string) =>
+    prueba && (
+      <Cuenta
+        etiqueta={prueba.e.tipo === 'entrega' ? 'Próxima entrega' : 'Próxima prueba'}
+        horaPrimero
+        asignatura={prueba.e.asignatura}
+        nombre={prueba.e.asignatura ? nombreAsignatura(prueba.e.asignatura) : (prueba.e.detalle ?? 'Evaluación')}
+        hasta={prueba.inicio}
+        reloj={reloj}
+        titulo={`${formatoLargo(prueba.inicio)}${prueba.e.detalle ? ` · ${prueba.e.detalle}` : ''}`}
+        className={className}
+      />
+    )
+  const cuentaClase = (className: string, horaPrimero = false) =>
+    clase ? (
+      <Cuenta
+        etiqueta="Próxima clase"
+        horaPrimero={horaPrimero}
+        asignatura={clase.clase.asignatura}
+        nombre={nombreAsignatura(clase.clase.asignatura)}
+        hasta={clase.inicio}
+        reloj={reloj}
+        titulo={`${formatoLargo(clase.inicio)} a las ${clase.clase.inicio}`}
+        className={className}
+      />
+    ) : (
+      <div className={`gap-1.5 ${className}`}>
+        <dt>Próxima clase</dt>
+        <dd className="font-mono">—</dd>
+      </div>
+    )
 
-      <div className="flex items-center gap-2.5">
-        <h1 className="font-titulo text-base font-bold tracking-tight whitespace-nowrap text-tinta">Monte Naranco Agenda Digital</h1>
-        <span
-          className="border border-linea px-1.5 py-0.5 font-mono text-[0.7rem] whitespace-nowrap text-arena"
-          title="Tu grupo (se cambia en Ajustes)"
-        >
-          {nombreGrupo(grupo)}
-        </span>
+  return (
+    <header className="cristal relative z-30 shrink-0 border-b border-linea bg-fondo/60 px-4 text-xs text-tinta-suave">
+      <div className="grid h-14 grid-cols-[1fr_auto_1fr] items-center gap-4">
+        <dl className="flex min-w-0">{cuentaPrueba('hidden md:flex')}</dl>
+
+        <div className="flex items-center gap-2.5">
+          <h1 className="font-titulo text-base font-bold tracking-tight whitespace-nowrap text-tinta">Monte Naranco Agenda Digital</h1>
+          <span
+            className="border border-linea px-1.5 py-0.5 font-mono text-[0.7rem] whitespace-nowrap text-arena"
+            title="Tu grupo (se cambia en Ajustes)"
+          >
+            {nombreGrupo(grupo)}
+          </span>
+        </div>
+
+        <dl className="flex min-w-0 justify-end">{cuentaClase('hidden md:flex')}</dl>
       </div>
 
-      <dl className="flex min-w-0 justify-end">
-        {clase ? (
-          <Cuenta
-            etiqueta="Próxima clase"
-            asignatura={clase.clase.asignatura}
-            nombre={nombreAsignatura(clase.clase.asignatura)}
-            hasta={clase.inicio}
-            reloj={reloj}
-            titulo={`${formatoLargo(clase.inicio)} a las ${clase.clase.inicio}`}
-            className="hidden sm:flex"
-          />
-        ) : (
-          <div className="hidden gap-1.5 sm:flex">
-            <dt>Próxima clase</dt>
-            <dd className="font-mono">—</dd>
-          </div>
-        )}
+      {/* Móvil: segunda fila con las dos cuentas, la hora delante para que queden alineadas */}
+      <dl className="-mt-1.5 grid gap-1 pb-2.5 md:hidden">
+        {cuentaPrueba('flex')}
+        {cuentaClase('flex', true)}
       </dl>
     </header>
   )

@@ -2,6 +2,8 @@
 
 > Proyecto personal de aprendizaje de un alumno de DAW del IES Monte Naranco. **No es una herramienta oficial del centro.**
 
+**🌐 En línea: [agenda.alvaro.cloud](https://agenda.alvaro.cloud)**
+
 Un panel de control para el alumnado que junta en **una sola pantalla** el horario de clase, el calendario de exámenes y entregas, el calendario escolar y una agenda diaria que propone qué hacer hoy. Todo ello con una identidad visual propia basada en el logo del instituto: puntos, tramados, un logo 3D interactivo, una lupa de cristal sobre el horario y sonidos de interfaz.
 
 ![Panel principal en escritorio](docs/img/panel.png)
@@ -14,6 +16,7 @@ Un panel de control para el alumnado que junta en **una sola pantalla** el horar
 - [Capturas](#capturas)
 - [Stack](#stack)
 - [Cómo arrancarlo](#cómo-arrancarlo)
+- [Despliegue](#despliegue)
 - [Estructura del proyecto](#estructura-del-proyecto)
 - [Datos](#datos)
 - [Accesibilidad y rendimiento](#accesibilidad-y-rendimiento)
@@ -27,14 +30,14 @@ Un panel de control para el alumnado que junta en **una sola pantalla** el horar
 ## Qué hace
 
 ### Panel principal (`#/`)
-En escritorio el panel ocupa **exactamente la pantalla, sin scroll**. Se reparte en una rejilla de cinco celdas:
+En escritorio el panel ocupa **exactamente la pantalla, sin scroll**. En móvil las celdas se apilan una debajo de otra. Se reparte en cinco celdas:
 
 | Celda | Qué muestra |
 |---|---|
-| **Cabecera** | A la izquierda, la cuenta atrás hasta la próxima prueba o entrega; a la derecha, hasta la próxima clase. El nombre de la asignatura va en su color. Lleva un efecto de cristal esmerilado. |
-| **Horario** | La semana de clases. Una **lupa de cristal (WebGL)** marca el día elegido; se mueve con la rueda del ratón, con las flechas o pulsando el nombre del día, y al pasar del viernes salta de semana. Al pasar el ratón por una asignatura se iluminan todas sus horas; un clic la "apaga" de forma temporal. |
-| **Calendario** | Dos modos: **Exámenes** (mes con marcas de color + lista agrupada por semanas, con filtros) y **Escolar** (festivos, días no lectivos y vacaciones del curso 2026-2027). |
-| **Logo 3D** | El logo del IES dibujado con puntos como un objeto 3D que gira. Sus partes son botones: el **tejado** lleva a *Registro*, la **puerta central** a *Iniciar sesión*, la **puerta derecha** a *Ajustes* y la **puerta izquierda** a la web del instituto. |
+| **Cabecera** | A la izquierda, la cuenta atrás hasta la próxima prueba o entrega; a la derecha, hasta la próxima clase. El nombre de la asignatura va en su color. Lleva un efecto de cristal esmerilado. En móvil, las dos cuentas atrás pasan a una segunda fila. |
+| **Horario** | La semana de clases. Una **lupa de cristal (WebGL)** marca el día elegido; se mueve con la rueda del ratón, con las flechas o pulsando el nombre del día, y al pasar del viernes salta de semana. Al pasar el ratón por una asignatura se iluminan todas sus horas; un clic la "apaga" de forma temporal. En móvil, pestañas por día y cada clase mide lo que dura (una de 2 horas ocupa el doble), con huecos "Libre" donde no hay clase. |
+| **Calendario** | Dos modos: **Exámenes** (mes con marcas de color + lista agrupada por semanas, con filtros) y **Escolar** (festivos, días no lectivos y vacaciones del curso 2026-2027). Pulsar un día del mes salta a su prueba en la lista. En móvil la lista tiene una altura máxima y scroll propio, para no alargar la página. |
+| **Logo 3D** | El logo del IES dibujado con puntos como un objeto 3D que gira hacia el ratón (en el móvil, al inclinar el teléfono, con el giroscopio). Sus partes son botones: el **tejado** lleva a [alvaro.cloud](https://alvaro.cloud) (*Origen*, la web madre), la **puerta central** a *Login* (iniciar sesión), la **puerta derecha** a *Ajustes* y la **puerta izquierda** a la web del instituto. |
 | **Agenda** | Las tareas del día elegido en la lupa, deducidas de las pruebas y del horario ("Termina…", "Repasa…", "Reparte el repaso"…). Se pueden marcar como hechas. Aparece con un efecto de escritura después de un breve estado de "pensando". |
 
 ### Ajustes (`#/ajustes`)
@@ -44,7 +47,7 @@ En escritorio el panel ocupa **exactamente la pantalla, sin scroll**. Se reparte
 - **Sincronizar:** botones de muestra para la futura sincronización con Microsoft 365.
 
 ### Landing de acceso (`#/entrar`, `#/crear`)
-Una escena única animada con el scroll: unas fichas de distintas plataformas (Teams, Educastur, aula virtual, Excel…) llegan desordenadas, encajan en una lista ("Todas tus tareas. Un mismo sitio.") y la lista deja paso a la tarjeta de inicio de sesión o registro. **Las cuentas aún no existen:** el formulario es de muestra.
+Una escena única animada con el scroll: unas fichas de distintas plataformas (Teams, Educastur, aula virtual, Excel…) llegan desordenadas, encajan en una lista ("Todas tus tareas. Un mismo sitio.") y la lista deja paso a la tarjeta de inicio de sesión o registro. **Las cuentas aún no existen:** los campos son obligatorios, pero no se comprueban ni se guardan. *Iniciar sesión* lleva al panel y *Crear cuenta* lleva a Ajustes, para elegir grupo y módulos antes de empezar.
 
 ### Transversal
 - **Transición entre páginas** con una "cortina" de píxeles que nace del punto pulsado.
@@ -60,9 +63,9 @@ Una escena única animada con el scroll: unas fichas de distintas plataformas (T
 |---|---|
 | ![Landing, fichas encajando](docs/img/landing-lista.png) | ![Landing, tarjeta de acceso](docs/img/landing-acceso.png) |
 
-| Ajustes | Móvil |
-|---|---|
-| ![Página de ajustes](docs/img/ajustes.png) | <img src="docs/img/movil.png" alt="Panel en móvil" width="260"> |
+| Ajustes | Móvil: cabecera, logo y agenda | Móvil: horario |
+|---|---|---|
+| ![Página de ajustes](docs/img/ajustes.png) | <img src="docs/img/movil.png" alt="Panel en móvil" width="240"> | <img src="docs/img/movil-horario.png" alt="Horario en móvil, cada clase con la altura de su duración" width="240"> |
 
 > Las capturas se han hecho con `?ahora=2026-11-12T09:30` (jueves, en mitad de una clase).
 
@@ -113,6 +116,34 @@ El reloj simulado avanza normalmente desde ese punto.
 
 ---
 
+## Despliegue
+
+La web está publicada en **https://agenda.alvaro.cloud**, sin servidores y pagando solo por uso:
+
+```
+Usuario ──► Cloudflare (DNS) ──► CloudFront (HTTPS, caché, Brotli) ──► S3 (bucket privado)
+```
+
+| Pieza | Para qué |
+|---|---|
+| **S3** (`eu-north-1`) | Guarda los archivos de `dist/`. Es privado: solo CloudFront puede leerlo (*Origin Access Control*). |
+| **CloudFront** | Sirve la web por HTTPS desde la caché más cercana, comprime y redirige `http` → `https`. |
+| **ACM** (`us-east-1`) | Certificado SSL gratuito para el subdominio, renovado automáticamente. |
+| **Cloudflare** | DNS del dominio: `agenda` → la distribución de CloudFront (en modo *DNS only*). |
+
+Para publicar una versión nueva (con la CLI de AWS configurada):
+
+```bash
+npm run deploy
+```
+
+El script [`scripts/desplegar.mjs`](scripts/desplegar.mjs) compila, sube los archivos con su tipo y su caché y vacía la caché de `index.html` en CloudFront:
+- **`assets/`:** se cachean un año, porque su nombre lleva un hash del contenido.
+- **Sonidos e iconos:** se cachean un día.
+- **`index.html`:** sin caché, y se sube el último.
+
+---
+
 ## Estructura del proyecto
 
 ```
@@ -129,6 +160,7 @@ src/
 ├── data/                   # JSON: asignaturas, calendario escolar y datos de cada grupo
 └── types/                  # Tipos compartidos (Clase, Horario, Evento…)
 docs/                       # Esta documentación y sus capturas
+scripts/desplegar.mjs       # npm run deploy: compila y publica en S3 + CloudFront
 public/sonidos/             # Kits de sonido (audio sprites .ogg/.m4a + mapa JSON)
 ```
 
@@ -164,10 +196,10 @@ Para añadir otro grupo: crear `src/data/grupos/<grupo>/` con su `horario.json` 
 Es una **versión 1 solo de frontend**. Lo que conviene saber:
 
 - **Solo hay datos de DAW 1º A.** Los demás grupos muestran un aviso de "sin datos".
-- **Las cuentas no existen todavía:** la landing y el formulario son una maqueta.
+- **Las cuentas no existen todavía:** el formulario exige datos pero no los valida ni los guarda (no hay base de datos).
 - **Datos de prueba:** `examenes.json` incluye entregas **inventadas** (5, 6, 9, 10, 12, 17 y 25 de noviembre; 1 y 3 de diciembre) para probar la Agenda. Hay que quitarlas cuando lleguen las fechas reales.
 - **Sin sonido hasta el primer clic:** es la política de autoplay de los navegadores; el audio arranca con el primer clic o tecla.
-- **Pendientes conocidos:** la barra de la landing aún dice "IES Agenda Digital" (nombre antiguo); el `<title>` de la pestaña y el favicon son provisionales; los módulos apagados se guardan con una clave común a todos los grupos.
+- **Pendiente conocido:** los módulos apagados se guardan con una clave común a todos los grupos.
 
 ---
 
@@ -186,7 +218,7 @@ Alternativas más sencillas: que el calendario se comparta como Excel/CSV o como
 ### Otras ideas
 - Cuentas de usuario reales y datos de todos los grupos.
 - Tareas propias además de las generadas.
-- Despliegue en Vercel o Netlify.
+- Despliegue automático en cada `push` (GitHub Actions → S3).
 - Tests automáticos (las comprobaciones de este proyecto se hicieron con scripts de Puppeteer fuera del repositorio).
 
 ---

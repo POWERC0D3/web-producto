@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, type ComponentProps } from 'react'
 import { gsap, useGSAP } from '../../lib/gsap'
 import { sonar } from '../../lib/sonido'
 import { TarjetaCuenta, type ModoCuenta } from './Acceso'
@@ -41,9 +41,9 @@ const PALABRAS = [
   { t: 'tareas.', x: 30, y: -10, giro: -4 },
 ]
 
-type Props = { modo: ModoCuenta; avisar: (texto: string) => void }
+type Props = { modo: ModoCuenta; onAcceder: ComponentProps<typeof TarjetaCuenta>['onAcceder'] }
 
-export function Hero({ modo, avisar }: Props) {
+export function Hero({ modo, onAcceder }: Props) {
   const raiz = useRef<HTMLElement>(null)
 
   useGSAP(
@@ -172,7 +172,7 @@ export function Hero({ modo, avisar }: Props) {
           {/* Sin escena (movimiento reducido): debajo de la lista. En escena: encima, en su mismo sitio */}
           <TarjetaCuenta
             modo={modo}
-            avisar={avisar}
+            onAcceder={onAcceder}
             className="cuenta relative z-30 mt-10 group-[.escena]/hero:absolute group-[.escena]/hero:inset-x-0 group-[.escena]/hero:top-0 group-[.escena]/hero:mt-0"
           />
         </div>

@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react'
 import { motion } from 'motion/react'
-import { irA } from '../../hooks/useRuta'
+import { irA, type Ruta } from '../../hooks/useRuta'
 import { EASE_SALIDA } from '../../lib/movimiento'
 import { sonar } from '../../lib/sonido'
 
@@ -15,26 +15,45 @@ function Campo({ etiqueta, tipo, autocompletar }: { etiqueta: string; tipo: stri
   return (
     <label className="block">
       <span className="mb-1.5 block text-xs text-tinta-suave">{etiqueta}</span>
+      {/* required: el navegador no deja enviar el formulario con el campo vacío (y type="email" exige una @).
+          Es la validación nativa de HTML: sin JavaScript, accesible y con sus mensajes en el idioma del navegador */}
       <input
         type={tipo}
+        required
         autoComplete={autocompletar}
         onFocus={() => sonar('tap', { volumen: 0.4 })}
-        className="w-full border border-linea bg-fondo px-3 py-2.5 text-sm transition-colors outline-none focus:border-arena"
+        className="w-full border border-linea bg-fondo px-3 py-2.5 text-sm transition-colors outline-none focus:border-arena user-invalid:border-coral"
       />
     </label>
   )
 }
 
-type Props = { modo: ModoCuenta; avisar: (texto: string) => void; className?: string }
+type Props = {
+  modo: ModoCuenta
+  /** Adónde ir al enviar (con la cortina desde el botón): entrar → panel; crear cuenta → ajustes.
+   *  `mensaje` se enseña al llegar */
+  onAcceder: (destino: Ruta, centro: { x: number; y: number }, mensaje: string) => void
+  className?: string
+}
 
-/** La tarjeta de cuenta (de muestra: al enviarla, solo avisa). En la landing sube y sustituye a la lista. */
-export function TarjetaCuenta({ modo, avisar, className = '' }: Props) {
+/**
+ * La tarjeta de cuenta. Aún no hay cuentas de verdad (ni base de datos): los datos son obligatorios
+ * pero no se comprueban ni se guardan. Iniciar sesión lleva al panel; crear cuenta, a Ajustes,
+ * para elegir grupo y módulos antes de empezar. En la landing sube y sustituye a la lista.
+ */
+export function TarjetaCuenta({ modo, onAcceder, className = '' }: Props) {
   const crear = modo === 'crear'
 
-  const enviar = (e: FormEvent) => {
+  // Solo llega aquí si todos los campos son válidos: si no, el navegador corta el envío antes
+  const enviar = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault() // sin esto, el navegador recargaría la página al enviar el formulario
-    sonar('button')
-    avisar(crear ? 'La creación de cuentas llegará pronto' : 'El inicio de sesión llegará pronto')
+    const boton = (e.nativeEvent as SubmitEvent).submitter ?? e.currentTarget
+    const r = boton.getBoundingClientRect()
+    onAcceder(
+      crear ? 'ajustes' : 'panel',
+      { x: r.left + r.width / 2, y: r.top + r.height / 2 },
+      crear ? 'Cuenta de muestra creada: elige tu grupo y tus módulos' : 'Sesión de muestra iniciada',
+    )
   }
 
   return (
@@ -67,7 +86,8 @@ export function TarjetaCuenta({ modo, avisar, className = '' }: Props) {
         ))}
       </div>
 
-      <form onSubmit={enviar} className="mt-5 space-y-3">
+      {/* invalid no burbujea: se escucha en fase de captura para sonar una vez por intento fallido */}
+      <form onSubmit={enviar} onInvalidCapture={() => sonar('caution', { volumen: 0.5, cada: 400 })} className="mt-5 space-y-3">
         {crear && <Campo etiqueta="Nombre" tipo="text" autocompletar="name" />}
         <Campo etiqueta="Correo del centro" tipo="email" autocompletar="email" />
         <Campo etiqueta="Contraseña" tipo="password" autocompletar={crear ? 'new-password' : 'current-password'} />
@@ -77,7 +97,7 @@ export function TarjetaCuenta({ modo, avisar, className = '' }: Props) {
         >
           {crear ? 'Crear cuenta' : 'Entrar'}
         </button>
-        <p className="text-center text-xs text-tinta-suave">Las cuentas llegarán en la versión 2.</p>
+        <p className="text-center text-xs text-tinta-suave">De muestra: los datos no se comprueban ni se guardan.</p>
       </form>
     </div>
   )

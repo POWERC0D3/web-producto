@@ -428,7 +428,10 @@ export function Calendario({ ahora, lista, sinDatos, className = '' }: Props) {
                 />
               </div>
             )}
-            <div className="min-h-0 flex-1 lg:overflow-y-auto lg:pr-1">
+            {/* En móvil y tablet la celda no tiene alto fijo: sin tope, la lista alargaría la página sin fin.
+                Con max-h se ven unas 5 pruebas y el resto con scroll propio (así pulsar un día del mes sigue saltando
+                a su prueba). En escritorio el alto lo pone la rejilla */}
+            <div className="max-h-[23rem] min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 lg:max-h-none">
               {modo === 'examenes' && sinDatos ? (
                 <SinDatos que="calendario de exámenes" grupo={sinDatos} />
               ) : modo === 'examenes' ? (

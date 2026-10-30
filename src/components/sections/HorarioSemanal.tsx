@@ -254,7 +254,9 @@ export function HorarioSemanal({
         Semana del {lunes.getDate()} {MESES_CORTOS[lunes.getMonth()]}
       </span>
     ),
-    className: `tinte-verde ${className}`,
+    // El lienzo de la lupa sobresale 44 px por cada lado (canto y sombra). En escritorio cae sobre la celda de al lado;
+    // en tablet el horario ocupa todo el ancho y se saldría de la pantalla: ahí se recorta (clip no crea scroll)
+    className: `tinte-verde md:max-lg:overflow-x-clip ${className}`,
   }
   // Los hooks (useState) van antes de este return: React exige llamarlos siempre en el mismo orden
   if (!horario) {
@@ -278,6 +280,27 @@ export function HorarioSemanal({
     'auto',
     ...lineas.slice(0, -1).map((h) => (h === horario.recreo.inicio ? '0.9rem' : 'minmax(0, 1fr)')),
   ].join(' ')
+
+  // Móvil: el día como una lista de PERIODOS. Cada clase mide lo que dura (Programación de 2 horas ocupa
+  // el doble que una de 1) y las horas sin clase en mitad del día se ven como huecos, igual que en la rejilla
+  const periodos = lineas
+    .slice(0, -1)
+    .map((ini, i) => ({ ini, fin: lineas[i + 1] }))
+    .filter((p) => p.ini !== horario.recreo.inicio)
+  const clasesMovil = clasesDelDia(horario, diaMovil)
+  type FilaMovil = { clase: Clase; n: number } | { libre: string }
+  const filasMovil: FilaMovil[] = []
+  for (const p of periodos) {
+    const empieza = clasesMovil.find((c) => c.inicio === p.ini)
+    if (empieza) {
+      const n = periodos.filter((q) => horaAMinutos(q.ini) >= horaAMinutos(empieza.inicio) && horaAMinutos(q.fin) <= horaAMinutos(empieza.fin)).length
+      filasMovil.push({ clase: empieza, n })
+    } else if (!clasesMovil.some((c) => horaAMinutos(c.inicio) < horaAMinutos(p.fin) && horaAMinutos(c.fin) > horaAMinutos(p.ini))) {
+      filasMovil.push({ libre: p.ini })
+    }
+  }
+  // Los huecos del final no son huecos: simplemente ese día se sale antes
+  while (filasMovil.length && 'libre' in filasMovil[filasMovil.length - 1]) filasMovil.pop()
 
   const bloque = (c: Clase, extra: Partial<PropsBloque> = {}) => {
     const estado = estadoDe(c, ahora, fechaDe(c.dia))
@@ -357,8 +380,9 @@ export function HorarioSemanal({
             <div
               key={`${c.dia}-${c.inicio}`}
               // Bajo la lupa la clase se amplía un poco: es el "aumento" (el cristal de encima solo decora)
-              // Un día sin clase (festivo, vacaciones…) deja su columna en penumbra; bajo la lupa, algo menos (se lee)
-              className={`min-h-0 motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-salida ${c.dia === dia && !cristal ? 'relative z-[5] scale-[1.045]' : ''} ${columnas[c.dia - 1].sinClase ? (c.dia === dia ? 'opacity-60' : 'opacity-35') : ''}`}
+              // Un día sin clase (festivo, vacaciones…) deja su columna en penumbra. Bajo la lupa no: el día elegido
+              // se lee siempre entero (que no hay clase ya lo dice la etiqueta "No lectivo" de su cabecera)
+              className={`min-h-0 motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-salida ${c.dia === dia && !cristal ? 'relative z-[5] scale-[1.045]' : ''} ${columnas[c.dia - 1].sinClase && c.dia !== dia ? 'opacity-35' : ''}`}
               style={{ gridColumn: c.dia + 1, gridRow: `${fila(c.inicio)} / ${fila(c.fin)}` }}
             >
               {bloque(c, { largo: fila(c.fin) - fila(c.inicio) > 1 })}
@@ -417,18 +441,38 @@ export function HorarioSemanal({
             transition={{ duration: 0.25, ease: EASE_SALIDA }}
             className="space-y-1.5"
           >
-            {clasesDelDia(horario, diaMovil).map((c, i, arr) => (
-              <li key={c.inicio}>
-                {i > 0 && arr[i - 1].fin === horario.recreo.inicio && (
-                  <p className="my-2 flex items-center gap-3 text-xs text-tinta-suave">
-                    <span className="h-px flex-1 bg-linea" />
-                    Recreo
-                    <span className="h-px flex-1 bg-linea" />
-                  </p>
-                )}
-                {bloque(c, { conHora: true })}
-              </li>
-            ))}
+            {filasMovil.map((f, i) => {
+              const ini = 'libre' in f ? f.libre : f.clase.inicio
+              return (
+                <li key={ini}>
+                  {i > 0 && ini === horario.recreo.fin && (
+                    <p className="my-2 flex items-center gap-3 text-xs text-tinta-suave">
+                      <span className="h-px flex-1 bg-linea" />
+                      Recreo
+                      <span className="h-px flex-1 bg-linea" />
+                    </p>
+                  )}
+                  {'libre' in f ? (
+                    <p className="flex h-10 items-center border border-dashed border-linea/70 px-3 font-mono text-[0.7rem] text-tinta-suave/70">
+                      {f.libre} · Libre
+                    </p>
+                  ) : (
+                    // Altura = periodos × 3.5rem; una línea fina marca dónde acaba cada periodo dentro del bloque
+                    <div className="relative" style={{ height: `${f.n * 3.5}rem` }}>
+                      {bloque(f.clase, { conHora: true, largo: true })}
+                      {Array.from({ length: f.n - 1 }, (_, k) => (
+                        <span
+                          key={k}
+                          className="pointer-events-none absolute inset-x-3 h-px border-t border-dashed border-tinta/10"
+                          style={{ top: `${((k + 1) / f.n) * 100}%` }}
+                          aria-hidden="true"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </li>
+              )
+            })}
           </motion.ol>
         </AnimatePresence>
       </div>

@@ -142,6 +142,33 @@ En las dos, el nombre de la asignatura va en su color. Como los exámenes solo t
 - Una optimización del logo **comprobada píxel a píxel**.
 - Limpieza de código muerto.
 
+### Día 3 por la noche (30 de octubre): publicación y últimos retoques
+
+**Documentación.** Se escribieron este documento, [ARQUITECTURA.md](ARQUITECTURA.md) y el README, con capturas reales sacadas de la propia web.
+
+**Publicación en AWS.** El autor ya tenía su web personal, **alvaro.cloud**, en S3 + CloudFront, con el DNS en Cloudflare. La agenda se publicó igual, en el subdominio **agenda.alvaro.cloud** (ver [3.9](#39-publicar-en-aws-sin-servidores)). Además, en la página de alvaro.cloud (unas tarjetas que se arrastran a una tarjeta central para abrir cada proyecto) una de ellas pasó a ser "Agenda Digital · Monte Naranco".
+
+**El nombre definitivo, por todas partes.**
+- La pestaña del navegador y la barra de la landing pasan a decir "Monte Naranco Agenda Digital".
+- El favicon de Vite deja paso a un **icono propio**: una hoja de calendario hecha de puntos cuadrados, con la cabecera verde del logo, anillas coral y un solo día en arena (*hoy*).
+
+**El logo como menú, revisado.**
+- El **tejado** deja de llevar al registro y pasa a llevar a la web madre, alvaro.cloud, con la etiqueta *Origen ↗*.
+- La **puerta central** se renombra a *Login*. No se eligió "Inicio" porque se confundiría con el tejado.
+
+**Login y registro que obligan a rellenar.** Sigue sin haber cuentas ni base de datos, pero el formulario ya se comporta como uno de verdad:
+- los campos son obligatorios y el correo exige una `@` (validación nativa de HTML);
+- *Iniciar sesión* lleva al **panel**;
+- *Crear cuenta* lleva a **Ajustes**, para elegir grupo y módulos antes de empezar.
+
+**Otra vez el brillo del viernes.** El 30 de octubre era festivo, y los nombres del día de hoy se veían más apagados que los de otros días. La causa era la atenuación de los días sin clase, que seguía activa **también bajo la lupa**. Ahora el día elegido se ve siempre entero; que no hay clase ya lo dice su etiqueta "No lectivo".
+
+**Una ronda solo para el móvil** (ver [3.10](#310-el-móvil-no-es-un-escritorio-pequeño)):
+- el horario muestra cuánto dura cada clase;
+- la cabecera recupera sus cuentas atrás;
+- el calendario deja de alargar la página;
+- el logo **gira con el giroscopio** al inclinar el teléfono.
+
 ---
 
 ## 3. Los mayores retos técnicos
@@ -239,6 +266,54 @@ La última petición fue "optimízalo, pero no te cargues nada". Se hizo así:
 3. **Demostrar que el logo se ve igual:** con movimiento reducido (sin tiempo) y `Math.random` con semilla fija, el lienzo es determinista. Se compararon **hashes de los píxeles** antes y después de optimizar: idénticos en escritorio y móvil, en reposo y con el ratón encima.
 4. **Ser honesto con lo que no mejora:** `rasterizar` ya iba a ~20 ns por punto y lo frena el acceso a memoria del z-buffer, no las cuentas. Bajarlo más exigiría pintar a 30 fps o con menos puntos, y eso **sí** cambiaría el aspecto. No se hizo.
 
+### 3.9 Publicar en AWS sin servidores
+
+**El objetivo:** que la web estuviera en el dominio propio del autor, con HTTPS, y que **solo costara dinero si recibe visitas**.
+
+**La arquitectura:**
+- **S3:** un bucket **privado** con los archivos de `dist/`.
+- **CloudFront:** la CDN que los sirve. Lee el bucket con *Origin Access Control*: solo esa distribución puede leerlo, y cualquier otro acceso a S3 recibe un 403.
+- **ACM:** un certificado gratuito, que tiene que estar en `us-east-1` porque CloudFront solo usa certificados de esa región.
+- **Cloudflare:** el DNS del dominio. El subdominio es un `CNAME` hacia CloudFront en modo "DNS only", porque el HTTPS ya lo da CloudFront.
+
+**El orden importa.** Primero el usuario de IAM y la CLI; después el certificado, cuyo registro de validación lo genera AWS; después el bucket y la distribución; y por último el DNS del subdominio, que apunta a una dirección que no existe hasta crear la distribución.
+
+**Seguridad:**
+- Un **usuario de IAM propio** para desplegar, nunca la cuenta raíz.
+- Las claves se configuran en el equipo con `aws configure` y **nunca pasan por el chat ni por el repositorio**.
+- El modo automático de Claude Code **bloqueó** crear el certificado sin permiso explícito, y ese paso lo ejecutó el autor a mano. Es una protección razonable para cambios de dominio.
+
+**`npm run deploy`** ([scripts/desplegar.mjs](../scripts/desplegar.mjs)):
+1. Compila.
+2. Sube primero todo **menos** `index.html`, con el tipo correcto de cada archivo y su caché:
+   - `assets/`, con hash en el nombre: un año, inmutable;
+   - sonidos e iconos: un día.
+3. Sube `index.html` **al final**, sin caché. Así nunca hay un `index.html` nuevo apuntando a archivos que aún no existen.
+4. Vacía la caché de `index.html` en CloudFront.
+
+Los assets antiguos no se borran: alguien con la web abierta puede pedir todavía un trozo diferido de la versión anterior.
+
+**Dos tropiezos con Windows y Git Bash:**
+- Git Bash convierte los argumentos con forma de ruta (`/index.html`) en rutas de Windows (`C:/Program Files/Git/index.html`), y la invalidación de CloudFront fallaba. Se desactiva con `MSYS_NO_PATHCONV=1`. Desde Node (el script de despliegue) no pasa.
+- Con esa conversión desactivada, la ruta `/c/Users/...` tampoco se convertía, y la CLI la leyó como `C:\c\Users\...`. **Se subió a alvaro.cloud una copia vieja** sin dar ningún error. Se descubrió comparando lo que había en el bucket (17.052 bytes en vez de 17.060) y se resolvió con rutas relativas.
+
+### 3.10 El móvil no es un escritorio pequeño
+
+Probando la web en el teléfono aparecieron cuatro problemas que en escritorio no existían.
+
+1. **El horario parecía tener la mitad de horas.** La vista móvil era una lista en la que todas las clases medían lo mismo: Programación (2 horas) se veía igual que una de 1.
+   - **Solución:** el día se recorre por **periodos**. Cada clase mide sus periodos × una altura fija, con una línea discontinua en cada cambio de hora, y las horas sin clase en mitad del día aparecen como "Libre".
+2. **Las cuentas atrás no salían.** En la cabecera estaban ocultas por debajo de 768 px porque no caben junto al título.
+   - **Solución:** en móvil van en una **segunda fila**, con la hora delante para que queden alineadas. Cada cuenta se define una sola vez y se coloca en dos sitios según el ancho.
+3. **El calendario alargaba la página sin fin** (1.446 px de los 2.628 de la página).
+   - **Solución:** en móvil la lista tiene **altura máxima y scroll propio**. Se descartó "Ver más" porque pulsar un día del mes salta hasta su prueba, y esa prueba podría haber estado escondida.
+4. **El logo gira con el giroscopio.** En pantallas táctiles, `deviceorientation` sustituye al ratón: inclinar el teléfono a los lados o hacia delante gira el logo.
+   - La postura "recta" se calibra sola, a partir de cómo sostienes el móvil.
+   - **iPhone y Chrome exigen pedir permiso** dentro de un gesto del usuario, así que se pide en el primer toque, igual que el sonido.
+   - La primera prueba dijo que "no hacía nada", pero era la prueba la que no tocaba la pantalla. Después, inclinando a un lado y a otro, se midió en la perspectiva de las puertas del logo (0,76 frente a 1,31).
+
+De paso apareció un fallo antiguo: entre 768 y 1024 px, el lienzo de la lupa sobresalía de la pantalla y creaba scroll horizontal. Se recortó con `overflow-x: clip` solo en ese rango.
+
 ---
 
 ## 4. Decisiones de diseño
@@ -284,6 +359,8 @@ Las animaciones tienen dirección y significado:
 | Efecto *scramble* "hacker" en la Agenda | Se pidió algo que pareciera escritura. |
 | Efecto de escritura con un `<span>` por letra | Provocaba tirones (~82 ms de layout): se rehízo con la "pluma" de `textContent`. |
 | Pie de página de la landing | Sobraba; los créditos están en este repositorio. |
+| El tejado del logo como acceso a "Registro" | Registrarse ya se puede desde la landing; el tejado pasó a llevar a la web madre (alvaro.cloud). |
+| "Ver más" para acortar el calendario en móvil | Habría escondido pruebas a las que se salta al pulsar un día del mes: se usó altura máxima con scroll. |
 
 ---
 
@@ -325,16 +402,21 @@ Esos scripts vivieron fuera del repositorio. Pasarlos a tests automáticos es un
 - **El criterio sigue siendo humano.** Las mejores correcciones vinieron del autor: "antes del cambio no pasaba", "suena demasiado fuerte", "sobrecarga demasiado". Notar eso es el trabajo.
 - **La IA también se equivoca:** una vez pasó Prettier con una configuración que no era la del proyecto y cambió el estilo de un archivo entero. Se detectó y se deshizo. Revisar los diffs importa.
 
+**Sobre publicar:**
+- **Comprobar el resultado, no el proceso.** Un "subido" y un "Completed" no garantizan nada: la subida a alvaro.cloud terminó sin errores con el archivo equivocado. Solo leer lo que de verdad había en el bucket lo destapó.
+- **Probar en el dispositivo real.** El escritorio no avisó de nada; el teléfono, de cuatro cosas. Y algunas no se pueden comprobar del todo con un emulador, como el giroscopio de un móvil de verdad.
+
 ---
 
 ## 8. Resultado final
 
-A 30 de octubre de 2026 la web es:
+A 30 de octubre de 2026 la web está **publicada en [agenda.alvaro.cloud](https://agenda.alvaro.cloud)** y es:
 
-- **Un panel de una pantalla:** horario con lupa de cristal, calendario de exámenes y escolar, agenda diaria generada y logo 3D interactivo como menú.
+- **Un panel de una pantalla:** horario con lupa de cristal, calendario de exámenes y escolar, agenda diaria generada y logo 3D interactivo como menú (que en el móvil gira con el giroscopio).
 - **Una página de ajustes:** grupo, módulos, sonido y sincronización (de muestra).
-- **Una landing animada con el scroll** que explica el concepto y termina en el acceso.
-- **Adaptable:** apilada en móvil, sin scroll en escritorio.
+- **Una landing animada con el scroll** que explica el concepto y termina en un login y un registro de muestra, que llevan al panel o a Ajustes.
+- **Adaptable:** apilada en móvil, con su propia vista del horario, y sin scroll en escritorio.
+- **Sin servidores:** S3 + CloudFront, se paga solo por uso, y se publica con `npm run deploy`.
 - **Respetuosa con el movimiento reducido**, usable con teclado y con sonido opcional.
 - **Comprobada:** sin errores en 32 combinaciones de pantalla, movimiento y ruta; con ~144 kB de JavaScript inicial comprimido.
 
