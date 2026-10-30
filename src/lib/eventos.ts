@@ -1,15 +1,24 @@
-import type { EventoConDias } from '../types'
-import { eventos } from './datos'
+import type { Evento, EventoConDias } from '../types'
+import { URL_CENTRO } from './config'
 import { diasEntre, parseFecha } from './fechas'
+import type { Excluidas } from './horario'
 
-/** Eventos ordenados por fecha, con los días que faltan respecto a `ahora`. */
-export function eventosConDias(ahora: Date): EventoConDias[] {
+/** Enlace de una prueba: el suyo propio si lo tiene, si no la web del centro. */
+export const urlDe = (e: Evento) => e.url ?? URL_CENTRO
+
+/** Las pruebas de un grupo ordenadas por fecha, con los días que faltan respecto a `ahora`. */
+export function eventosConDias(eventos: Evento[], ahora: Date): EventoConDias[] {
   return eventos
     .map((e, i) => {
       const dia = parseFecha(e.fecha)
       return { ...e, id: `${e.fecha}-${e.asignatura ?? 'gen'}-${i}`, dia, dias: diasEntre(ahora, dia) }
     })
     .sort((a, b) => a.dia.getTime() - b.dia.getTime())
+}
+
+/** Las pruebas vistas desde `fecha`, sin las de módulos apagados (lo que no cursas no llega a ningún panel). */
+export function eventosVisibles(eventos: Evento[], fecha: Date, excluidos: Excluidas): EventoConDias[] {
+  return eventosConDias(eventos, fecha).filter((e) => !e.asignatura || !excluidos.has(e.asignatura))
 }
 
 export const UMBRAL_URGENTE = 3

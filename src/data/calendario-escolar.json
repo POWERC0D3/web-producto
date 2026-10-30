@@ -1,0 +1,27 @@
+{
+  "curso": "2026-2027",
+  "fuente": "Resolución de 13 de mayo de 2026, BOPA núm. 103 de 1-VI-2026 (fechas de FP). El BOPA no da motivo de los días no lectivos: `motivo` es lo que se deduce de las fechas.",
+  "inicioClases": "2026-09-14",
+  "finClases": "2027-06-18",
+  "dias": [
+    { "fecha": "2026-09-08", "tipo": "festivo",    "nombre": "Día de Asturias",                          "url": "https://es.wikipedia.org/wiki/D%C3%ADa_de_Asturias" },
+    { "fecha": "2026-09-11", "tipo": "festivo",    "nombre": "Festivo local",                            "motivo": "Fiesta local del municipio" },
+    { "fecha": "2026-10-12", "tipo": "festivo",    "nombre": "Fiesta Nacional de España",                "url": "https://es.wikipedia.org/wiki/Fiesta_Nacional_de_Espa%C3%B1a" },
+    { "fecha": "2026-10-30", "tipo": "no-lectivo", "nombre": "Día no lectivo",                           "motivo": "Puente de Todos los Santos (del 30 oct al 4 nov sin clase)" },
+    { "fecha": "2026-11-02", "tipo": "festivo",    "nombre": "Todos los Santos (se pasa al lunes)",      "url": "https://es.wikipedia.org/wiki/D%C3%ADa_de_Todos_los_Santos" },
+    { "fecha": "2026-11-03", "tipo": "no-lectivo", "nombre": "Día no lectivo",                           "motivo": "Puente de Todos los Santos (del 30 oct al 4 nov sin clase)" },
+    { "fecha": "2026-11-04", "tipo": "no-lectivo", "nombre": "Día no lectivo",                           "motivo": "Puente de Todos los Santos (del 30 oct al 4 nov sin clase)" },
+    { "fecha": "2026-12-07", "tipo": "festivo",    "nombre": "Día de la Constitución (se pasa al lunes)", "url": "https://es.wikipedia.org/wiki/D%C3%ADa_de_la_Constituci%C3%B3n_(Espa%C3%B1a)" },
+    { "fecha": "2026-12-08", "tipo": "festivo",    "nombre": "Inmaculada Concepción",                    "url": "https://es.wikipedia.org/wiki/Inmaculada_Concepci%C3%B3n" },
+    { "fecha": "2027-02-08", "tipo": "no-lectivo", "nombre": "Día no lectivo (Carnaval)",                "motivo": "Coincide con el Carnaval (Antroxu): el martes de Carnaval es el 9 de febrero", "url": "https://es.wikipedia.org/wiki/Carnaval" },
+    { "fecha": "2027-02-09", "tipo": "no-lectivo", "nombre": "Día no lectivo (Carnaval)",                "motivo": "Martes de Carnaval (Antroxu)", "url": "https://es.wikipedia.org/wiki/Carnaval" },
+    { "fecha": "2027-04-30", "tipo": "no-lectivo", "nombre": "Día no lectivo",                           "motivo": "Puente del Día del Trabajo (del 30 abr al 3 may sin clase)" },
+    { "fecha": "2027-05-01", "tipo": "festivo",    "nombre": "Día del Trabajo",                          "url": "https://es.wikipedia.org/wiki/D%C3%ADa_Internacional_de_los_Trabajadores" },
+    { "fecha": "2027-05-03", "tipo": "no-lectivo", "nombre": "Día no lectivo",                           "motivo": "Puente del Día del Trabajo (del 30 abr al 3 may sin clase)" },
+    { "fecha": "2027-05-31", "tipo": "festivo",    "nombre": "Festivo local",                            "motivo": "Fiesta local del municipio" }
+  ],
+  "vacaciones": [
+    { "inicio": "2026-12-23", "fin": "2027-01-10", "nombre": "Vacaciones de Navidad", "url": "https://es.wikipedia.org/wiki/Navidad" },
+    { "inicio": "2027-03-22", "fin": "2027-03-28", "nombre": "Semana Santa",          "url": "https://es.wikipedia.org/wiki/Semana_Santa" }
+  ]
+}

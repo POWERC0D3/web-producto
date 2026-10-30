@@ -1,19 +1,24 @@
 import asignaturasJson from '../data/asignaturas.json'
-import examenesJson from '../data/examenes.json'
-import horarioJson from '../data/horario.json'
-import type { Asignatura, Evento, Horario } from '../types'
+import escolarJson from '../data/calendario-escolar.json'
+import type { Asignatura, CalendarioEscolar } from '../types'
 
-// Único punto de entrada a los JSON. TypeScript infiere `tipo: string`,
-// así que aquí afirmamos (`as`) que cumplen nuestros tipos más estrictos.
+// Datos comunes a todos los grupos. El horario y los exámenes dependen del
+// grupo y se piden a `datosDelGrupo` (lib/grupos.ts).
+// TypeScript infiere `tipo: string` en los JSON, así que aquí afirmamos (`as`)
+// que cumplen nuestros tipos más estrictos.
 export const asignaturas = asignaturasJson as Asignatura[]
-export const horario = horarioJson as Horario
-export const eventos = examenesJson as Evento[]
+export const calendarioEscolar = escolarJson as CalendarioEscolar
 
 const porId = new Map(asignaturas.map((a) => [a.id, a]))
 
 export function nombreAsignatura(id: string | null): string {
   if (!id) return 'General'
   return porId.get(id)?.nombre ?? id
+}
+
+/** El nombre oficial (largo), para los tooltips. */
+export function nombreCompleto(id: string | null): string {
+  return (id && porId.get(id)?.completo) || nombreAsignatura(id)
 }
 
 /**

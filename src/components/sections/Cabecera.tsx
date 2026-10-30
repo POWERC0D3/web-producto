@@ -1,67 +1,156 @@
-import type { EventoConDias } from '../../types'
-import { proximoEvento } from '../../lib/eventos'
-import { formatoLargo, textoCuentaAtras } from '../../lib/fechas'
-import { LogoMarca } from '../ui/LogoMarca'
+import type { CSSProperties } from 'react'
+import type { EventoConDias, Horario } from '../../types'
+import { useAhora } from '../../hooks/useAhora'
+import { colorAsignatura, nombreAsignatura } from '../../lib/datos'
+import { proximaClase } from '../../lib/escolar'
+import { diaSemana, formatoLargo, horaAMinutos } from '../../lib/fechas'
+import { nombreGrupo, type Grupo } from '../../lib/grupos'
+import { clasesDelDia, type Excluidas } from '../../lib/horario'
+import { Odometro } from '../ui/Odometro'
 
-const hora = (f: Date) => f.toTimeString().slice(0, 5)
+const dos = (n: number) => String(n).padStart(2, '0')
 
-type Props = { ahora: Date; lista: EventoConDias[]; onCuenta: (accion: 'entrar' | 'crear') => void }
+/** Cuenta atrás siempre en horas (aunque falte una semana) y minutos: "63 h 07 min". Sin segundos: distraían. */
+function textoFalta(desde: Date, hasta: Date): string {
+  // Redondeo hacia arriba: con 30 s de margen dice "1 min", nunca "0 min"
+  const total = Math.max(0, Math.ceil((hasta.getTime() - desde.getTime()) / 60000))
+  const h = Math.floor(total / 60)
+  const m = total % 60
+  return h ? `${h} h ${dos(m)} min` : `${m} min`
+}
 
 /**
- * Barra superior en tres columnas (grid 1fr · auto · 1fr): así el bloque central
- * queda centrado de verdad aunque la izquierda y la derecha midan distinto.
+ * Los exámenes solo tienen fecha. Para la cuenta atrás se toma la hora de la
+ * primera clase de esa asignatura ese día (o, si no hay, el inicio de la jornada).
  */
-export function Cabecera({ ahora, lista, onCuenta }: Props) {
-  const prox = proximoEvento(lista)
-  const pendientes = lista.filter((e) => e.dias >= 0).length
+function inicioDePrueba(e: EventoConDias, horario: Horario | null): Date {
+  const clases = horario ? clasesDelDia(horario, diaSemana(e.dia)) : []
+  const hora = clases.find((c) => c.asignatura === e.asignatura)?.inicio ?? clases[0]?.inicio ?? '08:15'
+  const d = new Date(e.dia)
+  d.setMinutes(horaAMinutos(hora))
+  return d
+}
+
+/**
+ * "Próxima clase Programación · en 63 h 07 min": el nombre en el color de su asignatura.
+ * Con `horaPrimero` (lado izquierdo) la hora va delante, pegada a la esquina: "en 63 h 07 min · Próxima prueba Inglés".
+ */
+function Cuenta({
+  etiqueta,
+  asignatura,
+  nombre,
+  hasta,
+  reloj,
+  titulo,
+  horaPrimero = false,
+  className = '',
+}: {
+  etiqueta: string
+  asignatura: string | null
+  nombre: string
+  hasta: Date
+  reloj: Date
+  titulo: string
+  horaPrimero?: boolean
+  className?: string
+}) {
+  const hora = <Odometro texto={`en ${textoFalta(reloj, hasta)}`} className="shrink-0 font-mono text-tinta" />
+  const punto = (
+    <span className="shrink-0" aria-hidden="true">
+      ·
+    </span>
+  )
+  return (
+    <div className={`min-w-0 items-center gap-1.5 whitespace-nowrap ${className}`} title={titulo}>
+      {horaPrimero && (
+        <>
+          {hora}
+          {punto}
+        </>
+      )}
+      <dt className="shrink-0">{etiqueta}</dt>
+      <dd className="flex min-w-0 items-center gap-1.5">
+        <span className="min-w-0 truncate font-medium text-(--c)" style={{ '--c': colorAsignatura(asignatura) } as CSSProperties}>
+          {nombre}
+        </span>
+        {!horaPrimero && (
+          <>
+            {punto}
+            {hora}
+          </>
+        )}
+      </dd>
+    </div>
+  )
+}
+
+type Props = {
+  horario: Horario | null
+  lista: EventoConDias[]
+  excluidas: Excluidas
+  grupo: Grupo // solo se muestra: se cambia en Ajustes
+}
+
+/**
+ * Barra superior en tres columnas (grid 1fr · auto · 1fr): el nombre queda
+ * centrado de verdad aunque los lados midan distinto.
+ * Izquierda: cuánto falta para la próxima prueba. Derecha: para la próxima clase.
+ */
+export function Cabecera({ horario, lista, excluidas, grupo }: Props) {
+  // Reloj propio que late cada segundo: solo la cabecera se re-renderiza tan a menudo
+  const reloj = useAhora(1000)
+  const clase = horario ? proximaClase(horario, reloj, excluidas) : null
+  // La primera prueba que aún no ha empezado
+  const prueba = lista
+    .filter((e) => e.dias >= 0)
+    .map((e) => ({ e, inicio: inicioDePrueba(e, horario) }))
+    .find((p) => p.inicio > reloj)
 
   return (
-    <header className="grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-linea bg-fondo/80 px-4 backdrop-blur-md">
-      <div className="flex min-w-0 items-center gap-3">
-        <LogoMarca className="h-6 w-auto shrink-0" />
-        <h1 className="truncate text-sm">
-          <span className="font-serif text-lg">Monte Naranco</span>
-          <span className="hidden text-tinta-suave xl:inline"> · DAW1A · 1ª evaluación</span>
-        </h1>
+    <header className="grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-4 cristal relative z-30 border-b border-linea bg-fondo/60 px-4 text-xs text-tinta-suave">
+      <dl className="flex min-w-0">
+        {prueba && (
+          <Cuenta
+            etiqueta={prueba.e.tipo === 'entrega' ? 'Próxima entrega' : 'Próxima prueba'}
+            horaPrimero
+            asignatura={prueba.e.asignatura}
+            nombre={prueba.e.asignatura ? nombreAsignatura(prueba.e.asignatura) : (prueba.e.detalle ?? 'Evaluación')}
+            hasta={prueba.inicio}
+            reloj={reloj}
+            titulo={`${formatoLargo(prueba.inicio)}${prueba.e.detalle ? ` · ${prueba.e.detalle}` : ''}`}
+            className="hidden md:flex"
+          />
+        )}
+      </dl>
+
+      <div className="flex items-center gap-2.5">
+        <h1 className="font-titulo text-base font-bold tracking-tight whitespace-nowrap text-tinta">Monte Naranco Agenda Digital</h1>
+        <span
+          className="border border-linea px-1.5 py-0.5 font-mono text-[0.7rem] whitespace-nowrap text-arena"
+          title="Tu grupo (se cambia en Ajustes)"
+        >
+          {nombreGrupo(grupo)}
+        </span>
       </div>
 
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => onCuenta('entrar')}
-          className="px-3 py-1.5 text-sm text-tinta-suave transition-colors hover:text-tinta"
-        >
-          Iniciar sesión
-        </button>
-        <button
-          type="button"
-          onClick={() => onCuenta('crear')}
-          className="bg-tinta px-3.5 py-1.5 text-sm font-medium text-fondo transition-colors hover:bg-arena"
-        >
-          Crear cuenta
-        </button>
-      </div>
-
-      <div className="flex items-center justify-end gap-6 text-xs text-tinta-suave">
-        <dl className="hidden items-center gap-6 lg:flex">
-          <div className="flex gap-1.5">
-            <dt>Pendientes</dt>
-            <dd className="font-mono text-tinta">{pendientes}</dd>
+      <dl className="flex min-w-0 justify-end">
+        {clase ? (
+          <Cuenta
+            etiqueta="Próxima clase"
+            asignatura={clase.clase.asignatura}
+            nombre={nombreAsignatura(clase.clase.asignatura)}
+            hasta={clase.inicio}
+            reloj={reloj}
+            titulo={`${formatoLargo(clase.inicio)} a las ${clase.clase.inicio}`}
+            className="hidden sm:flex"
+          />
+        ) : (
+          <div className="hidden gap-1.5 sm:flex">
+            <dt>Próxima clase</dt>
+            <dd className="font-mono">—</dd>
           </div>
-          {prox && (
-            <div className="flex gap-1.5">
-              <dt>Próxima</dt>
-              <dd className={prox.dias <= 1 ? 'text-coral' : 'text-tinta'}>
-                {prox.asignatura ?? 'Evaluación'} {textoCuentaAtras(prox.dias)}
-              </dd>
-            </div>
-          )}
-        </dl>
-        <p className="hidden shrink-0 font-mono sm:block">
-          <span className="hidden capitalize 2xl:inline">{formatoLargo(ahora)} · </span>
-          <span className="text-tinta">{hora(ahora)}</span>
-        </p>
-      </div>
+        )}
+      </dl>
     </header>
   )
 }

@@ -6,8 +6,8 @@
    --font-mono   → font-mono
    --ease-salida → ease-salida                                       */
 @theme {
-  /* Serif editorial para títulos (font-serif), sans neutra para leer, mono para horas y cifras */
-  --font-serif: "Newsreader Variable", ui-serif, Georgia, serif;
+  /* Montserrat (la de la web del IES Monte Naranco) para títulos, sans neutra para leer, mono para horas y cifras */
+  --font-titulo: "Montserrat Variable", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, Consolas, monospace;
 
@@ -30,23 +30,73 @@
   --ease-salida: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-suave: cubic-bezier(0.65, 0, 0.35, 1);
 
+  /* Barrido de luz de los esqueletos de carga (animate-barrido) */
+  --animate-barrido: barrido 1.4s var(--ease-suave) infinite;
+  @keyframes barrido {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  /* Flotar suave de las fichas de la landing. Usa `translate` (no `transform`)
+     para no pisar el transform con el que GSAP las mueve al hacer scroll */
+
+  --animate-flotar: flotar 5s var(--ease-suave) infinite;
+  @keyframes flotar {
+    0%, 100% { translate: 0 0; }
+    50% { translate: 0 -6px; }
+  }
+
 }
 
-/* Colores de asignatura (pastel, sacados de tu horario original).
+/* Colores de asignatura: 5 familias por área; dentro de cada una, dos matices vecinos (~15° de diferencia).
+   Todos claros y pastel: identifican sin robar la atención.
+   Solo tonos fríos: naranja (arena), rojo (coral) y verde (logo) ya significan algo en la web.
    `static`: Tailwind normalmente solo genera las variables que ve usadas en
-   clases; estas se usan desde JS (var(--color-asig-prog)…), así que se
-   fuerzan siempre. Se aplican muy diluidos para no saturar. */
+   clases; estas se usan desde JS (var(--color-asig-prog)…), así que se fuerzan siempre. */
 @theme static {
-  --color-asig-pidw: #aab4c8;
-  --color-asig-badat: #9fc4ea;
-  --color-asig-ip: #c9aee6;
-  --color-asig-ipei: #f2df9a;
-  --color-asig-sisin: #eab3c9;
-  --color-asig-lmsgi: #b3dba0;
-  --color-asig-prog: #f5b48c;
-  --color-asig-dasp: #e39ad9;
-  --color-asig-endes: #f2c27a;
-  --color-asig-sasp: #8fca6f;
+  /* Azul: desarrollo */
+  --color-asig-prog: #a6bdff;
+  --color-asig-endes: #92c6f6;
+  /* Cian: datos y sistemas */
+  --color-asig-badat: #8fdfe6;
+  --color-asig-sisin: #9adcca;
+  /* Violeta: web y proyecto */
+  --color-asig-lmsgi: #c6b2ff;
+  --color-asig-pidw: #ddb4f3;
+  /* Rosa: transversales */
+  --color-asig-ip: #f5b2d4;
+  --color-asig-ipei: #f0b6c4;
+  /* Pizarra: sector productivo */
+  --color-asig-dasp: #d6dce8;
+  --color-asig-sasp: #aab4c7;
+}
+
+/* Tinte verde del logo que entra desde la izquierda (Horario y Calendario): el mismo recurso que el
+   brillo arena de la Agenda, pero casi imperceptible. Es una imagen de fondo, así que se suma al
+   color de fondo del panel sin pisarlo */
+@utility tinte-verde {
+  background-image: radial-gradient(
+    70% 110% at 0% 50%,
+    color-mix(in oklab, var(--color-verde) 16%, transparent),
+    transparent 70%
+  );
+}
+
+/* Cristal tipo Apple para la cabecera: desenfoca y satura lo de detrás, con un brillo diagonal
+   muy tenue y un filo de luz arriba (como el canto de una lámina de vidrio) */
+@utility cristal {
+  background-image: linear-gradient(
+    100deg,
+    rgb(255 255 255 / 0.045),
+    rgb(255 255 255 / 0.01) 35%,
+    transparent 60%,
+    rgb(255 255 255 / 0.025)
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.07),
+    inset 0 -1px 0 rgb(255 255 255 / 0.03),
+    0 8px 24px -12px rgb(0 0 0 / 0.8);
+  backdrop-filter: blur(16px) saturate(1.6);
 }
 
 @layer base {

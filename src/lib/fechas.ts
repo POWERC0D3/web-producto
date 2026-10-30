@@ -10,6 +10,12 @@ export function parseFecha(iso: string): Date {
   return new Date(y, m - 1, d)
 }
 
+/** Date → "2026-11-13" en hora local (la inversa de parseFecha) */
+export function isoLocal(fecha: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${fecha.getFullYear()}-${p(fecha.getMonth() + 1)}-${p(fecha.getDate())}`
+}
+
 export function inicioDelDia(fecha: Date): Date {
   return new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate())
 }
@@ -18,6 +24,18 @@ export function sumarDias(fecha: Date, n: number): Date {
   const r = inicioDelDia(fecha)
   r.setDate(r.getDate() + n)
   return r
+}
+
+/** El lunes de la semana de `fecha` (a las 00:00). */
+export function lunesDe(fecha: Date): Date {
+  return sumarDias(fecha, 1 - diaSemana(fecha))
+}
+
+/** Fecha del día `dia` (1 = lunes … 5 = viernes) de esta semana; en fin de semana, de la que viene. */
+export function fechaDeLaSemana(ahora: Date, dia: number): Date {
+  const hoy = diaSemana(ahora)
+  const lunes = sumarDias(ahora, hoy <= 5 ? 1 - hoy : 8 - hoy)
+  return sumarDias(lunes, dia - 1)
 }
 
 /** Días naturales entre dos fechas. Math.round absorbe el cambio de hora. */
@@ -62,11 +80,6 @@ export function textoCuentaAtras(dias: number): string {
   return `en ${dias} días`
 }
 
-export function textoDuracion(minutos: number): string {
-  if (minutos < 60) return `${minutos} min`
-  const h = Math.floor(minutos / 60)
-  const m = minutos % 60
-  return m ? `${h} h ${m} min` : `${h} h`
-}
+export const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic']
 
-export const NOMBRES_DIA = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+export const NOMBRES_DIA =['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']

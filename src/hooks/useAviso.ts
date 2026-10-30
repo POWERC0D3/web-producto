@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { sonar } from '../lib/sonido'
 
 /** Un mensaje flotante que desaparece solo a los 2,5 s. */
 export function useAviso() {
@@ -11,7 +12,10 @@ export function useAviso() {
   }, [aviso])
 
   // El id cambia en cada llamada: repetir el mismo texto reinicia el temporizador
-  const avisar = (texto: string) => setAviso({ texto, id: Date.now() })
+  const avisar = (texto: string) => {
+    sonar('notification', { volumen: 0.5 })
+    setAviso({ texto, id: Date.now() })
+  }
 
   return { aviso, avisar }
 }
